@@ -6,50 +6,38 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: clinical-backend
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://redis:6379
       - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_KEY=${SUPABASE_KEY}
       - JWT_SECRET=${JWT_SECRET}
-    depends_on:
-      - redis
-    networks:
-      - health-fitness-network
+      - PRESCRIPTION_SIGNATURE_SECRET=${PRESCRIPTION_SIGNATURE_SECRET}
+      - VIDEO_SECRET=${VIDEO_SECRET}
     restart: unless-stopped
-
-  # Redis cache
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
     networks:
-      - health-fitness-network
-    restart: unless-stopped
+      - clinical-network
 
-  # ML Service (Python FastAPI)
-  ml-service:
+  # Admin Dashboard
+  dashboard:
     build:
-      context: ./ml-service
+      context: ./dashboard-admin
       dockerfile: Dockerfile
+    container_name: clinical-dashboard
     ports:
-      - "8000:8000"
+      - "3001:3001"
     environment:
-      - PYTHONUNBUFFERED=1
-    networks:
-      - health-fitness-network
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend:3000
+    depends_on:
+      - backend
     restart: unless-stopped
+    networks:
+      - clinical-network
 
 networks:
-  health-fitness-network:
+  clinical-network:
     driver: bridge
-
-volumes:
-  redis-data:
